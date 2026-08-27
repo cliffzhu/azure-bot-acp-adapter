@@ -9,7 +9,11 @@
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test"
+    "test": "node --import tsx --test",
+    "report:messages": "node dist/getBotMessageReport.js",
+    "report:messages:dev": "tsx src/getBotMessageReport.ts",
+    "report:email": "node dist/sendBotMessageReportEmail.js",
+    "report:email:dev": "tsx src/sendBotMessageReportEmail.ts"
   },
   "engines": {
     "node": ">=20"

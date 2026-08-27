@@ -193,6 +193,13 @@ The response reports service health, in-memory session count, and remote WebSock
 | --- | --- | --- | --- |
 | `PORT` | No | `3978` | HTTP listening port |
 | `LOG_LEVEL` | No | `info` | Application log level |
+| `LOG_DIR` | No | `logs` | Directory for `bot.log`, rotated logs, and generated message reports |
+| `LOG_MAX_BYTES` | No | `5242880` | Maximum `bot.log` size before rotating to `bot.log.older` |
+| `LOG_REPORT_DAYS` | No | `7` | Lookback window used by the message report generator and email interval |
+| `MAIL_SENDER_ENDPOINT` | No | Empty | HTTP endpoint used to send scheduled report emails |
+| `MAIL_SENDER_ENDPOINT_AUTHCODE` | No | Empty | Auth code sent as `Bearer` and `X-Auth-Code` to the email endpoint |
+| `MAIL_FROM_ADDRESS` | No | Empty | Sender email address for scheduled report emails |
+| `MAIL_TO_ADDRESS` | No | Empty | Recipient email address for scheduled report emails |
 | `HEALTH_ENDPOINT_PATH` | No | `/healthz` | Health endpoint path |
 | `OUTGOING_ACTIVITY_LOG_ENABLED` | No | `true` | Successful outgoing activity logging |
 | `STREAMING_RESPONSES_ENABLED` | No | `false` | Process streamed updates while preserving channel-compatible delivery |
@@ -238,6 +245,34 @@ The compiled service starts with:
 
 ```powershell
 npm start
+```
+
+### Generate the message report
+
+The server-side report script compiles to `dist/getBotMessageReport.js`. It reads `LOG_DIR` for `bot.log.older` and `bot.log`, consolidates both files into one chronological stream, and writes `bot-message-report.html` into `LOG_DIR`. The generated report uses `LOG_REPORT_DAYS + 1` as its effective lookback window so scheduled emails have an extra overlap day around rotations and send timing.
+
+On Linux container startup, the server also ensures a managed root cron entry exists when `LOG_REPORT_DAYS` is set to a value greater than `0`. The managed cron runs daily at `16:00 UTC` and calls the compiled report script. If `LOG_REPORT_DAYS` is missing or not greater than `0`, the managed cron entry is removed.
+
+```powershell
+npm run build
+npm run report:messages
+```
+
+The equivalent manual cron command is:
+
+```sh
+0 16 * * * cd /app && node dist/getBotMessageReport.js
+```
+
+### Email the message report
+
+When `LOG_REPORT_DAYS` is greater than `0` and all `MAIL_*` variables are present, Linux container startup also ensures a managed email-report cron entry exists. The email job reads the generated `bot-message-report.html` from `LOG_DIR` and posts it to `MAIL_SENDER_ENDPOINT` using the JSON shape from `scripts/Send-Email-Sample.ps1`.
+
+The first scheduled email date is persisted as the next Monday in `bot-message-report-email-state.json` under `LOG_DIR`. After a successful send, the next send date advances by `LOG_REPORT_DAYS`. The cron trigger runs around 10:00 `America/Los_Angeles`; the TypeScript sender checks the Pacific hour and schedule state before sending, so duplicate cron triggers only log a skip.
+
+```powershell
+npm run build
+npm run report:email
 ```
 
 ## Container Deployment
