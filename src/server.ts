@@ -14,8 +14,12 @@ import { SessionStore } from "./sessionStore";
 import { WebSocketManager } from "./websocketManager";
 import { WebSocketSessionCoordinator } from "./websocketSessionCoordinator";
 import { applySymlinkMappings } from "./symlinkBootstrap";
+import { applyReportCronBootstrap } from "./reportCronBootstrap";
+import { applyEmailReportCronBootstrap } from "./emailReportCronBootstrap";
 
 applySymlinkMappings(config.symlinkMappings);
+applyReportCronBootstrap();
+applyEmailReportCronBootstrap();
 
 const app = express();
 app.use(express.json());
