@@ -423,7 +423,7 @@ function renderHtml(
         td { padding: 12px; border-top: 1px solid var(--line); vertical-align: top; font-size: 14px; }
         tr.outgoing td { background: #f7faff; }
         tr.incoming td { border-top-width: 3px; }
-        th:nth-child(n+2), td:nth-child(n+2) { width: 10ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        th:nth-child(n+2), td:nth-child(n+2) { width: 20ch; white-space: normal; overflow-wrap: anywhere; }
         .badge { display: inline-block; padding: 3px 7px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; }
         .badge.incoming { background: var(--incoming); }
         .badge.outgoing { background: var(--outgoing); }
