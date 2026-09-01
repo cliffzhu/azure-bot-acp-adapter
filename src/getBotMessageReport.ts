@@ -381,11 +381,11 @@ function renderRows(groups: ReportGroup[]): string {
 
       const directionClass = item.direction.toLowerCase();
       rows.push(`            <tr class="${directionClass}">
+                <td class="message">${convertToHtmlMessage(item.message)}</td>
                 <td>${encodeHtml(formatLocalDateTime(item.timestamp))}</td>
                 <td>${encodeHtml(duration)}</td>
                 <td><span class="badge ${directionClass}">${encodeHtml(item.direction)}</span></td>
                 <td>${encodeHtml(item.channel)}</td>
-                <td class="message">${convertToHtmlMessage(item.message)}</td>
             </tr>`);
     }
   }
@@ -423,10 +423,7 @@ function renderHtml(
         td { padding: 12px; border-top: 1px solid var(--line); vertical-align: top; font-size: 14px; }
         tr.outgoing td { background: #f7faff; }
         tr.incoming td { border-top-width: 3px; }
-        th:nth-child(1), td:nth-child(1) { width: 220px; white-space: nowrap; }
-        th:nth-child(2), td:nth-child(2) { width: 110px; white-space: nowrap; }
-        th:nth-child(3), td:nth-child(3) { width: 110px; }
-        th:nth-child(4), td:nth-child(4) { width: 120px; }
+        th:nth-child(n+2), td:nth-child(n+2) { width: 10ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .badge { display: inline-block; padding: 3px 7px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; }
         .badge.incoming { background: var(--incoming); }
         .badge.outgoing { background: var(--outgoing); }
@@ -442,7 +439,7 @@ function renderHtml(
         <p class="summary">${recordCount} messages from the last ${reportDays} day(s) &middot; Generated ${encodeHtml(formatLocalDateTimeWithOffset(generatedAt))}<br>${sourceLabel}: ${sourceText}</p>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Date/time</th><th>Duration</th><th>Direction</th><th>Channel</th><th>Message</th></tr></thead>
+                <thead><tr><th>Message</th><th>Date/time</th><th>Duration</th><th>Direction</th><th>Channel</th></tr></thead>
                 <tbody>
 ${rows}
                 </tbody>
