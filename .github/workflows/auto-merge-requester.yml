@@ -16,6 +16,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   enable-auto-merge:
@@ -122,6 +123,13 @@ jobs:
                   repo: context.repo.repo,
                   pull_number: pullRequestNumber,
                   merge_method: mergeMethodLower
+                });
+
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: 'docker-publish.yml',
+                  ref: 'main'
                 });
 
                 core.notice('Merged PR #' + pullRequestNumber + ' from ' + author + ' using ' + mergeMethodLower + '.');
