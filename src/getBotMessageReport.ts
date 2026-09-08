@@ -381,11 +381,11 @@ function renderRows(groups: ReportGroup[]): string {
 
       const directionClass = item.direction.toLowerCase();
       rows.push(`            <tr class="${directionClass}">
-                <td class="message">${convertToHtmlMessage(item.message)}</td>
-                <td>${encodeHtml(formatLocalDateTime(item.timestamp))}</td>
-                <td>${encodeHtml(duration)}</td>
-                <td><span class="badge ${directionClass}">${encodeHtml(item.direction)}</span></td>
-                <td>${encodeHtml(item.channel)}</td>
+            <td class="message" style="width:auto; white-space:normal; overflow-wrap:anywhere;">${convertToHtmlMessage(item.message)}</td>
+            <td style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere; word-break:break-word;">${encodeHtml(formatLocalDateTime(item.timestamp))}</td>
+            <td style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere; word-break:break-word;">${encodeHtml(duration)}</td>
+            <td style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere; word-break:break-word;"><span class="badge ${directionClass}">${encodeHtml(item.direction)}</span></td>
+            <td style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere; word-break:break-word;">${encodeHtml(item.channel)}</td>
             </tr>`);
     }
   }
@@ -423,7 +423,7 @@ function renderHtml(
         td { padding: 12px; border-top: 1px solid var(--line); vertical-align: top; font-size: 14px; }
         tr.outgoing td { background: #f7faff; }
         tr.incoming td { border-top-width: 3px; }
-        th:nth-child(n+2), td:nth-child(n+2) { width: 20ch; white-space: normal; overflow-wrap: anywhere; }
+        th:nth-child(n+2), td:nth-child(n+2) { width: 120px; max-width: 120px; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
         .badge { display: inline-block; padding: 3px 7px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; }
         .badge.incoming { background: var(--incoming); }
         .badge.outgoing { background: var(--outgoing); }
@@ -439,7 +439,8 @@ function renderHtml(
         <p class="summary">${recordCount} messages from the last ${reportDays} day(s) &middot; Generated ${encodeHtml(formatLocalDateTimeWithOffset(generatedAt))}<br>${sourceLabel}: ${sourceText}</p>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Message</th><th>Date/time</th><th>Duration</th><th>Direction</th><th>Channel</th></tr></thead>
+              <colgroup><col><col style="width:120px"><col style="width:120px"><col style="width:120px"><col style="width:120px"></colgroup>
+              <thead><tr><th>Message</th><th style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere;">Date/time</th><th style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere;">Duration</th><th style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere;">Direction</th><th style="width:120px; max-width:120px; white-space:normal; overflow-wrap:anywhere;">Channel</th></tr></thead>
                 <tbody>
 ${rows}
                 </tbody>
