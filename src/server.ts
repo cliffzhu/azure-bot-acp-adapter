@@ -578,6 +578,16 @@ async function routeMessageToBackend(input: MessageRoutingInput): Promise<{
 
   // Ensure session exists for this conversation
   const sessionId = await wsCoordinator.ensureSession(conversationKey);
+  const selectedSession = wsCoordinator.getSessionDiagnostics(conversationKey);
+  console.info("[upstream-session] selected", {
+    channelId: input.channelId,
+    conversationKey,
+    sessionId,
+    sessionMode: selectedSession?.sessionMode ?? "unknown",
+    sessionState: selectedSession?.sessionState ?? "unknown",
+    sessionAgeMs: selectedSession?.initializedAt ? Date.now() - selectedSession.initializedAt : null,
+    promptLength: input.userText.length
+  });
 
   // Send message to backend and get buffered response
   const response = await wsCoordinator.sendMessage(conversationKey, sessionId, input.userText);

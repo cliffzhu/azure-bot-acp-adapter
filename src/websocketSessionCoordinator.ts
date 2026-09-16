@@ -566,6 +566,14 @@ export class WebSocketSessionCoordinator {
       // Reset handler for new message
       handler.reset();
 
+      logSessionLifecycleEvent({
+        event: "user-prompt-started",
+        sessionId,
+        conversationKey,
+        sessionMode: session.sessionMode,
+        promptLength: userMessage.length
+      });
+
       // Send prompt and wait for response (session/update messages arrive during this call)
       let result: SessionPromptResult;
       try {
@@ -608,12 +616,26 @@ export class WebSocketSessionCoordinator {
       // Get buffered response
       const response = handler.getResponse();
       const preparedInitialResponse = this.preparedSessionInitialResponses.get(sessionId);
+      let warmupResponseStripped = false;
       if (preparedInitialResponse) {
-        response.text = response.text.startsWith(preparedInitialResponse)
+        warmupResponseStripped = response.text.startsWith(preparedInitialResponse);
+        response.text = warmupResponseStripped
           ? response.text.slice(preparedInitialResponse.length)
           : response.text;
         this.preparedSessionInitialResponses.delete(sessionId);
       }
+
+      logSessionLifecycleEvent({
+        event: "user-prompt-completed",
+        sessionId,
+        conversationKey,
+        sessionMode: session.sessionMode,
+        promptLength: userMessage.length,
+        responseLength: response.text.length,
+        responseHasErrors: response.errors.length > 0,
+        warmupResponseStripped,
+        stopReason: result.stopReason
+      });
 
       // Clean up handler after getting response
       if (response.text.length === 0) {
@@ -751,6 +773,20 @@ export class WebSocketSessionCoordinator {
    */
   onSessionUpdate(callback: (conversationKey: string, update: SessionUpdate) => void): void {
     this.updateCallback = callback;
+  }
+
+  getSessionDiagnostics(conversationKey: string): Pick<SessionRecord, "sessionId" | "sessionState" | "sessionMode" | "initializedAt"> | undefined {
+    const session = this.sessionStore.get(conversationKey);
+    if (!session) {
+      return undefined;
+    }
+
+    return {
+      sessionId: session.sessionId,
+      sessionState: session.sessionState,
+      sessionMode: session.sessionMode,
+      initializedAt: session.initializedAt
+    };
   }
 
   /**

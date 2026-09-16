@@ -216,6 +216,10 @@ type SessionLifecycleLogParams = {
   ageMs?: number;
   remainingPoolSize?: number;
   sessionMode?: string;
+  promptLength?: number;
+  responseLength?: number;
+  responseHasErrors?: boolean;
+  warmupResponseStripped?: boolean;
   stopReason?: string;
   error?: unknown;
 };
@@ -257,6 +261,10 @@ export function logSessionLifecycleEvent(params: SessionLifecycleLogParams): voi
     ageMs: params.ageMs ?? null,
     remainingPoolSize: params.remainingPoolSize ?? null,
     sessionMode: params.sessionMode ?? null,
+    promptLength: params.promptLength ?? null,
+    responseLength: params.responseLength ?? null,
+    responseHasErrors: params.responseHasErrors ?? null,
+    warmupResponseStripped: params.warmupResponseStripped ?? null,
     stopReason: params.stopReason ?? null,
     error: params.error ?? null
   });
