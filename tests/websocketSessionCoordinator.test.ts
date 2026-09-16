@@ -269,6 +269,11 @@ test("createPreparedSessionInternal sends warmup prompt when configured", async 
     setConfigOption: async () => undefined,
     sessionPrompt: async (sessionId: string, prompt: string) => {
       calls.push(`prompt:${sessionId}:${prompt}`);
+      (coordinator as any).warmupResponseHandlers.get(sessionId).handleUpdate({
+        sessionId,
+        sessionUpdate: "agent_message",
+        content: { text: "warmup response" }
+      });
       return { stopReason: "completion" as const };
     },
     sessionDestroy: async () => {
@@ -285,10 +290,44 @@ test("createPreparedSessionInternal sends warmup prompt when configured", async 
   try {
     const sessionId = await (coordinator as any).createPreparedSessionInternal();
     assert.equal(sessionId, "prepared-with-warmup");
+    assert.equal(
+      (coordinator as any).preparedSessionInitialResponses.get(sessionId),
+      "warmup response"
+    );
     assert.deepEqual(calls, ["new", "prompt:prepared-with-warmup:warmup prompt text"]);
   } finally {
     (config as any).warmupSessionInitialPrompt = originalPrompt;
   }
+});
+
+test("sendMessage removes the prepared session warmup response from the first user response", async () => {
+  const store = new SessionStore();
+  const conversationKey = "conv-warmup-history";
+  const coordinator = new WebSocketSessionCoordinator(store);
+  const warmupText = "Hi in Env";
+  const record = store.getOrCreate(conversationKey);
+  record.sessionId = "prepared-with-history";
+  record.sessionState = "ready";
+  record.sessionMode = "prepared";
+
+  const manager = {
+    sessionPrompt: async () => {
+      (coordinator as any).responseHandlers.get(conversationKey).handleUpdate({
+        sessionId: "prepared-with-history",
+        sessionUpdate: "agent_message",
+        content: { text: `${warmupText}User answer` }
+      });
+      return { stopReason: "completion" as const };
+    }
+  };
+
+  (coordinator as any).manager = manager;
+  (coordinator as any).isInitialized = true;
+  (coordinator as any).preparedSessionInitialResponses.set("prepared-with-history", warmupText);
+
+  const response = await coordinator.sendMessage(conversationKey, "prepared-with-history", "user question");
+
+  assert.equal(response.text, "User answer");
 });
 
 test("createPreparedSessionInternal destroys session when warmup prompt fails", async () => {

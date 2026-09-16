@@ -35,6 +35,8 @@ export class WebSocketSessionCoordinator {
   private protocolVersion: number = 1;
   private supportedAuthMethods: string[] = [];
   private responseHandlers: Map<string, StreamingResponseHandler> = new Map();
+  private warmupResponseHandlers: Map<string, StreamingResponseHandler> = new Map();
+  private preparedSessionInitialResponses: Map<string, string> = new Map();
   private sessionToConversationMap: Map<string, string> = new Map(); // sessionId -> conversationKey
   private preparedSessionIds: Set<string> = new Set();
   private preparedSessionPool?: PreparedSessionPool;
@@ -171,6 +173,12 @@ export class WebSocketSessionCoordinator {
     this.manager.on("session/update", (update: SessionUpdate) => {
       // Preferred routing: backend supplies sessionId for isolation.
       if (update.sessionId) {
+        const warmupHandler = this.warmupResponseHandlers.get(update.sessionId);
+        if (warmupHandler) {
+          warmupHandler.handleUpdate(update);
+          return;
+        }
+
         const conversationKey = this.sessionToConversationMap.get(update.sessionId);
         if (conversationKey) {
           const handler = this.responseHandlers.get(conversationKey);
@@ -362,7 +370,16 @@ export class WebSocketSessionCoordinator {
       sessionId
     });
 
-    const result = await this.manager.sessionPrompt(sessionId, prompt);
+    const warmupHandler = new StreamingResponseHandler();
+    this.warmupResponseHandlers.set(sessionId, warmupHandler);
+
+    let result: SessionPromptResult;
+    try {
+      result = await this.manager.sessionPrompt(sessionId, prompt);
+    } finally {
+      this.warmupResponseHandlers.delete(sessionId);
+    }
+
     if (result.stopReason === "error") {
       const exitCode = typeof result.exitCode === "number" ? result.exitCode : "unknown";
       logSessionLifecycleEvent({
@@ -372,6 +389,11 @@ export class WebSocketSessionCoordinator {
         error: `stopReason=error; exitCode=${exitCode}`
       });
       throw new Error(`Prepared session warmup prompt failed (exitCode=${exitCode})`);
+    }
+
+    const warmupText = warmupHandler.getResponse().text;
+    if (warmupText) {
+      this.preparedSessionInitialResponses.set(sessionId, warmupText);
     }
 
     logSessionLifecycleEvent({
@@ -585,6 +607,13 @@ export class WebSocketSessionCoordinator {
 
       // Get buffered response
       const response = handler.getResponse();
+      const preparedInitialResponse = this.preparedSessionInitialResponses.get(sessionId);
+      if (preparedInitialResponse) {
+        response.text = response.text.startsWith(preparedInitialResponse)
+          ? response.text.slice(preparedInitialResponse.length)
+          : response.text;
+        this.preparedSessionInitialResponses.delete(sessionId);
+      }
 
       // Clean up handler after getting response
       if (response.text.length === 0) {
