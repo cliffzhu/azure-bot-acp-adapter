@@ -368,6 +368,18 @@ function formatDuration(durationMs: number | null): string {
   return `${(durationMs / 1000).toFixed(3)} s`;
 }
 
+const DIRECTION_BADGE_COLORS: Record<string, string> = {
+  incoming: "#176b4d",
+  outgoing: "#245aa5"
+};
+
+// Outlook ignores background on inline elements, so the badge is a one-cell table with bgcolor.
+function renderDirectionBadge(direction: string, directionClass: string): string {
+  const color = DIRECTION_BADGE_COLORS[directionClass] ?? "#25332b";
+
+  return `<table class="badge-wrap" role="presentation" border="0" cellpadding="0" cellspacing="0" style="width:auto;table-layout:auto;border-collapse:collapse;"><tr><td class="badge ${directionClass}" bgcolor="${color}" style="background-color:${color};border:0;border-radius:4px;padding:3px 7px;color:#ffffff;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap;">${encodeHtml(direction)}</td></tr></table>`;
+}
+
 function renderRows(groups: ReportGroup[]): string {
   const rows: string[] = [];
 
@@ -384,7 +396,7 @@ function renderRows(groups: ReportGroup[]): string {
         <td class="message">${convertToHtmlMessage(item.message)}</td>
         <td>${encodeHtml(formatLocalDateTime(item.timestamp))}</td>
         <td>${encodeHtml(duration)}</td>
-        <td><span class="badge ${directionClass}">${encodeHtml(item.direction)}</span></td>
+        <td>${renderDirectionBadge(item.direction, directionClass)}</td>
         <td>${encodeHtml(item.channel)}</td>
             </tr>`);
     }
@@ -426,9 +438,10 @@ function renderHtml(
         .message-column { width: 70%; }
         .metadata-column { width: 7.5%; }
         th:not(:first-child), td:not(:first-child) { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
-        .badge { display: inline-block; padding: 3px 7px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; }
-        .badge.incoming { background: var(--incoming); }
-        .badge.outgoing { background: var(--outgoing); }
+        .badge-wrap { width: auto; table-layout: auto; }
+        .badge { padding: 3px 7px; border: 0; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .badge.incoming { background-color: var(--incoming); }
+        .badge.outgoing { background-color: var(--outgoing); }
         .message { overflow-wrap: anywhere; line-height: 1.45; }
         .message table { margin: 8px 0; table-layout: auto; }
         .message th, .message td { position: static; width: auto; padding: 6px 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); white-space: normal; }
