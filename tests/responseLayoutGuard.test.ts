@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { analyzeResponseLayout, RESPONSE_LAYOUT_FALLBACK } from "../src/responseLayoutGuard";
+import { analyzeResponseLayout, logRawFallbackResponse, RESPONSE_LAYOUT_FALLBACK } from "../src/responseLayoutGuard";
 
 const knownGoodDressCodeReply = `<p>Beedie does not have a formal office dress code policy. Employees are encouraged to dress professionally and appropriately for the workplace.</p>
 <h4>Suggested Questions (reply with the item number only):</h4>
@@ -30,6 +30,38 @@ test("flags the Oct 8 generic reply as a layout/instruction deviation", () => {
 
 test("provides an adapter-owned fallback for flagged replies", () => {
   assert.match(RESPONSE_LAYOUT_FALLBACK, /couldn't verify this response/i);
+});
+
+test("logs the complete raw upstream response and layout result", () => {
+  const originalInfo = console.info;
+  const calls: unknown[][] = [];
+  console.info = (...args: unknown[]) => { calls.push(args); };
+
+  try {
+    logRawFallbackResponse({
+      conversationKey: "conversation-1",
+      sessionId: "session-1",
+      attempt: 1,
+      maxAttempts: 2,
+      rawResponse: genericOutlierReply,
+      layoutConforms: false,
+      missingSignals: ["html_markup", "suggested_questions_heading", "suggested_question_items"]
+    });
+  } finally {
+    console.info = originalInfo;
+  }
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], "[response-layout-guard] raw upstream response");
+  assert.deepEqual(calls[0][1], {
+    conversationKey: "conversation-1",
+    sessionId: "session-1",
+    attempt: 1,
+    maxAttempts: 2,
+    rawResponse: genericOutlierReply,
+    layoutConforms: false,
+    missingSignals: ["html_markup", "suggested_questions_heading", "suggested_question_items"]
+  });
 });
 
 test("supports a custom required heading and question count", () => {

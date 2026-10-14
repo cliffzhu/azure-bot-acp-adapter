@@ -17,7 +17,7 @@ import { applySymlinkMappings } from "./symlinkBootstrap";
 import { applyReportCronBootstrap } from "./reportCronBootstrap";
 import { applyEmailReportCronBootstrap } from "./emailReportCronBootstrap";
 import { parseSuggestedQuestionsWithDiagnostics, SuggestedQuestion } from "./suggestedQuestionParser";
-import { analyzeResponseLayout, RESPONSE_LAYOUT_FALLBACK } from "./responseLayoutGuard";
+import { analyzeResponseLayout, logRawFallbackResponse, RESPONSE_LAYOUT_FALLBACK } from "./responseLayoutGuard";
 
 applySymlinkMappings(config.symlinkMappings);
 applyReportCronBootstrap();
@@ -605,6 +605,7 @@ async function routeMessageToBackend(input: MessageRoutingInput): Promise<{
     });
 
     response = await wsCoordinator.sendMessage(conversationKey, sessionId, input.userText);
+    const rawUpstreamResponse = response.text;
     replyMessage = response.text;
     if (!replyMessage) {
       if (response.hasErrors) {
@@ -620,6 +621,18 @@ async function routeMessageToBackend(input: MessageRoutingInput): Promise<{
       requiredHeading: config.responseLayoutRequiredHeading,
       minSuggestedQuestions: config.responseLayoutMinSuggestedQuestions
     });
+
+    if (config.responseLayoutGuardMode === "fallback") {
+      logRawFallbackResponse({
+        conversationKey,
+        sessionId,
+        attempt,
+        maxAttempts,
+        rawResponse: rawUpstreamResponse,
+        layoutConforms: layout.conforms,
+        missingSignals: layout.missingSignals
+      });
+    }
 
     if (layout.conforms || config.responseLayoutGuardMode === "off") {
       break;

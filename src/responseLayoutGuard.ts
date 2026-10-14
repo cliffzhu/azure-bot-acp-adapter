@@ -14,6 +14,18 @@ export type ResponseLayoutRequirements = {
   minSuggestedQuestions?: number;
 };
 
+export function logRawFallbackResponse(params: {
+  conversationKey: string;
+  sessionId: string;
+  attempt: number;
+  maxAttempts: number;
+  rawResponse: string;
+  layoutConforms: boolean;
+  missingSignals: string[];
+}): void {
+  console.info("[response-layout-guard] raw upstream response", params);
+}
+
 /**
  * Detects obvious deviations from the observed HR-agent response contract.
  * This is a layout/instruction-adherence signal, not a factuality check and
